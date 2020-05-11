@@ -58,16 +58,16 @@ client = docker.DockerClient(base_url='unix://var/run/docker.sock')
 x_client = docker.APIClient(base_url='unix://var/run/docker.sock')
 
 containers_running[containers_running_index] = client.containers.run(image="slave:latest", command =["python","slave.py"], \
-detach=True,network = 'rideshare_default',volumes = {'/home/saransh/RideShare/codedata':{'bind': '/code/sdb'}})
+detach=True,network = 'rss_default',volumes = {'/home/ubuntu/RSS/codedata':{'bind': '/code/sdb'}})
 containers_running_index +=1
 time.sleep(5)
 
 client.containers.run(image="master:latest", command =["python","master.py"], \
-detach=True,network = 'rideshare_default')
+detach=True,network = 'rss_default')
 time.sleep(5)
 
 client.containers.run(image="shared_db:latest", command =["python","shared_db.py"], \
-detach=True,network = 'rideshare_default',volumes = {'/home/saransh/RideShare/codedata':{'bind': '/code/sdb'}})
+detach=True,network = 'rss_default',volumes = {'/home/ubuntu/RSS/codedata':{'bind': '/code/sdb'}})
 time.sleep(5)
 
 
@@ -101,7 +101,7 @@ def scale_timer():
 		for i in range(t,no_of_slaves):
 			
 			containers_running[containers_running_index] = client.containers.run(image="slave:latest", command =["python","slave.py"], \
-			detach=True,network = 'rideshare_default',volumes = {'/home/saransh/RideShare/codedata':{'bind': '/code/sdb'}})
+			detach=True,network = 'rss_default',volumes = {'/home/ubuntu/RSS/codedata':{'bind': '/code/sdb'}})
 			time.sleep(5)
 			
 			Name = containers_running[containers_running_index].name
@@ -264,7 +264,7 @@ def crashSlave():
 		del containers_running[max_pid]
 		del pid_name_mapping[max_pid]
 		containers_running[containers_running_index] = client.containers.run(image="slave:latest", command =["python","slave.py"], \
-		detach=True,network = 'rideshare_default',volumes = {'/home/saransh/RideShare/codedata':{'bind': '/code/sdb'}})
+		detach=True,network = 'rss_default',volumes = {'/home/ubuntu/RSS/codedata':{'bind': '/code/sdb'}})
 		Name = containers_running[containers_running_index].name	
 		Pid = x_client.inspect_container(Name)['State']['Pid']
 		pid_name_mapping[containers_running_index] = {'Name':Name, 'Pid': Pid}
