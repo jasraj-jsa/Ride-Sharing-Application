@@ -15,8 +15,6 @@ app=Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
 @app.route('/api/v1/users',methods=["PUT"])
-#{"username":"qwerty",
- #	"password":"3d725109c7e7c0bfb9d709836735b56d943d263f"}
 def create_user():
 	print("working")
 	global unique_count
@@ -35,8 +33,8 @@ def create_user():
 		return Response(json.dumps({"result": "Password not in SHA1 hash hex format"}), 400)
 	headers = {'Content-Type' : 'application/json'}
 	data = json.dumps({"table_name" : "user", "column_names" : ["username", "password"], "column_values" : [username,password], "delete_flag" : "0", "where" : "abcd"})
-	response = make_request('http://18.215.52.220/write', data, headers, "POST")
-	#print(str(response))
+	response = make_request('http://52.87.27.206/write', data, headers, "POST")
+	
 
 	if str(response) == "<Response [400]>":
 		return Response(json.dumps({"result": "Duplicate entry"}), 400)
@@ -61,7 +59,6 @@ def make_request(url, data, headers, http_method):
 			response = requests.get(url, data = data, headers = headers)
 			return response
 	except requests.exceptions.RequestException as e:
-		#print(e)
 		return None
 
 @app.route('/api/v1/_count',methods=["GET"])
@@ -80,25 +77,20 @@ def reset_count():
 
 
 @app.route('/api/v1/users/<username>', methods=["DELETE"])
-#postman : 127.0.0.1:5000/api/v1/users/abcd
 def delete_user(username):
 	global unique_count
 	unique_count += 1
-	#username = request.args.get('username', None)
 	where_clause = "username = " + "'" + username + "'"
 	data = json.dumps({"table_name": "user", "column_names": ["username", "password"], "column_values": ["abc", "1234"], "where": where_clause, "delete_flag" : "1"})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/write', data, headers, "POST")
-	#print(str(response))
+	response = make_request('http://52.87.27.206/write', data, headers, "POST")
 
 	where_clause = "created_by = " + "'" + username + "'"
 	data = json.dumps({"table_name": "rides", "column_names": ["created_by", "timestamp", "source", "destination"], "column_values": ["abcd", "1234", "1", "2"], "where": where_clause, "delete_flag": "1"})
-	response1 = make_request('http://18.215.52.220/write', data, headers, "POST")
+	response1 = make_request('http://52.87.27.206/write', data, headers, "POST")
 	where_clause = "username = " + "'" + username + "'"
 	data = json.dumps({"table_name": "ride_users", "column_names": ["rideId", "username"], "column_values": ["2", "abcd"], "where": where_clause, "delete_flag": "1"})
-	response2 = make_request('http://18.215.52.220/write', data, headers, "POST")
-	#print(str(response1))
-	#print(str(response2))
+	response2 = make_request('http://52.87.27.206/write', data, headers, "POST")
 
 	if str(response) == "<Response [400]>":
 		return Response(json.dumps({"result": "Username does not exist"}), 400)
@@ -108,15 +100,12 @@ def delete_user(username):
 
 
 @app.route('/api/v1/db/clear', methods=["POST"])
-#postman : 127.0.0.1:5000/api/v1/rides/2
 def clear_db():
 
 	where_clause = "1=1"
 	data = json.dumps({"table_name": "user", "column_names": ["username", "password"], "column_values": ["abc", "1234"], "where": where_clause, "delete_flag" : "1"})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/write', data, headers, "POST")
-	#statement = text("DELETE" +  " FROM " + "user" + " WHERE " + "1=1" + ";")
-	#result = db.engine.execute(statement.execution_options(autocommit=True))
+	response = make_request('http://52.87.27.206/write', data, headers, "POST")
 	return Response(json.dumps({"result": "Deletion successful"}), 200)
 
 
@@ -128,7 +117,7 @@ def get_users():
 	where_clause = "1=1"
 	data = json.dumps({"table_name": "user", "column_names": ["*"], "where": where_clause})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/read', data, headers, "POST")
+	response = make_request('http://52.87.27.206/read', data, headers, "POST")
 
 	if response.json() == []:
 		return Response(json.dumps({"result": "No users"}), 204)
@@ -139,76 +128,6 @@ def get_users():
 			res.append(item["username"])
 		return jsonify(res)
 
-'''
-@app.route('/api/v1/db/write',methods=["POST"])
-def write_to_db():
-	try:
-		table_name = request.get_json()["table_name"]
-		column_names = request.get_json()["column_names"]
-		column_values = request.get_json()["column_values"]
-		delete_flag = request.get_json()["delete_flag"]
-		where_clause = request.get_json()["where"]
-	except:
-		table_name = request.get_json()["table_name"]
-		column_names = request.get_json()["column_names"]
-		column_values = request.get_json()["column_values"]
-		delete_flag = 0
-
-
-	comma_sep_column_names = ",".join(column_names)
-	comma_sep_column_values = ",".join("'{0}'".format(x) for x in column_values)
-	#print(comma_sep_column_names)
-	#print(comma_sep_column_values)
-
-	if delete_flag == '1':
-		statement = text("DELETE" +  " FROM " + table_name + " WHERE " + where_clause + ";")
-		#print(statement)
-		try:
-			result = db.engine.execute(statement.execution_options(autocommit=True))
-			#print(result.rowcount)
-			#return str(result.rowcount)
-
-			if result.rowcount == 0:
-				return Response(json.dumps({"result": "Ride does not exist"}), 400)
-			else:
-
-				return Response(json.dumps({"result": "Deletion successful"}), 200)
-
-		except IntegrityError:
-			return "NOT OK"
-
-	else:
-		statement = text("INSERT INTO " + table_name + " (" + comma_sep_column_names + ") " + "VALUES (" + comma_sep_column_values + ");")
-		#print(statement)
-
-		#result = db.session.execute("INSERT INTO user (username,password) VALUES ('abc','123');").execution_options(autocommit = True)
-		try:
-			db.engine.execute(statement.execution_options(autocommit = True))
-			#print(result.rowcount)
-			return Response(json.dumps({"result": "Insertion successful"}), 201)
-		except IntegrityError:
-			return Response(json.dumps({"result": "Duplicate entry"}), 400)
-
-@app.route('/api/v1/db/read',methods=["POST"])
-def read_from_db():
-	table_name = request.get_json()["table_name"]
-	column_names = request.get_json()["column_names"]
-	where_clause = request.get_json()["where"]
-	#delete_flag = request.get_json()["delete_flag"]
-	
-	comma_sep_column_names = ",".join(column_names)
-
-
-	statement = text("SELECT " + comma_sep_column_names + " FROM " + table_name + " WHERE " + where_clause + ";")
-	#print(statement)
-	result = db.engine.execute(statement.execution_options(autocommit = True))
-	result = result.fetchall()
-	res = []
-	for i in result:
-		res.append(dict(i))
-	#print(res)
-	return jsonify(res)
-'''
 
 if __name__ == '__main__':
 	

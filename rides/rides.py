@@ -27,7 +27,6 @@ def make_request(url, data, headers, http_method):
 			return response
 
 	except requests.exceptions.RequestException as e:
-		#print(e)
 		return None
 
 
@@ -50,11 +49,10 @@ def reset_count():
 def count_rides():
 	global unique_count
 	unique_count += 1
-	#new_cur = time.strftime("%Y-%m-%d %H:%M:%S", cur)
 	where_clause = "1=1"
 	data = json.dumps({"table_name": "rides", "column_names": ["*"], "where": where_clause})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/read', data, headers, "POST")
+	response = make_request('http://52.87.27.206/read', data, headers, "POST")
 
 	result = response.json()
 	r = len(result)
@@ -68,7 +66,6 @@ def count_rides():
 def create_ride():
 	global unique_count
 	unique_count += 1
-	#{"created_by" : "abcde", "timestamp" : "12-02-2020:32-11-08", "source" : "1", "destination" : "2"}
 	try:
 		created_by = request.get_json()["created_by"]
 		timestamp = request.get_json()["timestamp"]
@@ -88,13 +85,11 @@ def create_ride():
 		return Response(json.dumps({"result": "Source and destination cannot be same"}), 400)
 
 	data = json.dumps({})
-	#["rideId", "created_by","timestamp","source","destination"]
 
 	headers = {'Content-Type' : 'application/json'}
 
-	response = make_request('http://CC-Rideshare-1938598602.us-east-1.elb.amazonaws.com/api/v1/users', data, headers, "GET")
+	response = make_request('http://CC-Project-344747991.us-east-1.elb.amazonaws.com/api/v1/users', data, headers, "GET")
 	
-	#print(response)
 	if request.method != 'POST' \
 						 '':
 		return Response(json.dumps({"result": "Invalid method"}), 405)
@@ -104,7 +99,7 @@ def create_ride():
 		headers = {'Content-Type' : 'application/json'}
 		data = json.dumps({"table_name" : "rides", "column_names" : ["created_by","timestamp","source","destination"] , "column_values" : [created_by, dt, source, destination], "delete_flag" : "0", "where" : "abcd"})
 		#data1 = json.dumps({"table_name": "ride_users", "column_names": ["rideId", "username"], "column_values": [created_by, timestamp, source, destination]})
-		write_response = make_request('http://18.215.52.220/write', data, headers, "POST")
+		write_response = make_request('http://52.87.27.206/write', data, headers, "POST")
 		return Response(json.dumps({"result" : "Ride created"}), 201)
 
 
@@ -116,16 +111,16 @@ def wrong_method():
 
 
 @app.route('/api/v1/rides/<rideId>', methods=["DELETE"])
-#postman : 127.0.0.1:5000/api/v1/rides/2
+
 def delete_ride(rideId):
 	global unique_count
 	unique_count += 1
 	where_clause = "rideId = " + "'" + rideId + "'"
 	data = json.dumps({"table_name": "rides", "column_names" : ["created_by","timestamp","source","destination"] , "column_values" : ["abcd", "1234", "1", "2"], "where": where_clause, "delete_flag" : "1"})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/write', data, headers, "POST")
+	response = make_request('http://52.87.27.206/write', data, headers, "POST")
 
-	#print(str(response))
+	
 	if str(response) == "<Response [400]>":
 		return Response(json.dumps({"result": "Ride does not exist"}), 400)
 	elif str(response) == "<Response [200]>":
@@ -133,24 +128,19 @@ def delete_ride(rideId):
 
 
 @app.route('/api/v1/db/clear', methods=["POST"])
-#postman : 127.0.0.1:5000/api/v1/rides/2
+
 def clear_db():
 
 	where_clause = "1=1"
 	data = json.dumps({"table_name": "rides", "column_names": ["username", "password"], "column_values": ["abc", "1234"], "where": where_clause, "delete_flag" : "1"})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/write', data, headers, "POST")
+	response = make_request('http://52.87.27.206/write', data, headers, "POST")
 
 	where_clause = "1=1"
 	data = json.dumps({"table_name": "ride_users", "column_names": ["username", "password"], "column_values": ["abc", "1234"], "where": where_clause, "delete_flag" : "1"})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/write', data, headers, "POST")
+	response = make_request('http://52.87.27.206/write', data, headers, "POST")
 
-	# statement = text("DELETE" +  " FROM " + "rides" + " WHERE " + "1=1" + ";")
-	# result = db.engine.execute(statement.execution_options(autocommit=True))
-	
-	# statement = text("DELETE" +  " FROM " + "ride_users" + " WHERE " + "1=1" + ";")
-	# result = db.engine.execute(statement.execution_options(autocommit=True))
 	
 	return Response(json.dumps({"result": "Deletion successful"}), 200)
 
@@ -158,7 +148,7 @@ def clear_db():
 
 
 @app.route('/api/v1/rides/<rideId>', methods=["POST"])
-#postman : 127.0.0.1:5000/api/v1/rides/2
+
 def join_ride(rideId):
 	global unique_count
 	unique_count += 1
@@ -171,14 +161,11 @@ def join_ride(rideId):
 	where_clause = "rideId = " + "'" + rideId + "'"
 	data = json.dumps({"table_name": "rides", "column_names": ["*"], "where": where_clause})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/read', data, headers, "POST")
+	response = make_request('http://52.87.27.206/read', data, headers, "POST")
 
 	where_clause = "username = " + "'" + username + "'"
-	#data = json.dumps({"table_name": "user", "column_names": ["*"], "where": where_clause})
 	data = json.dumps({})
-	response1 = make_request('http://CC-Rideshare-1938598602.us-east-1.elb.amazonaws.com/api/v1/users', data, headers, "GET")
-
-	#print(str(response))
+	response1 = make_request('http://CC-Project-344747991.us-east-1.elb.amazonaws.com/api/v1/users', data, headers, "GET")
 	if response.json() == []:
 		return Response(json.dumps({"result": "Ride does not exist"}), 400)
 
@@ -187,8 +174,7 @@ def join_ride(rideId):
 
 	else:
 		data = json.dumps({"table_name": "ride_users", "column_names" : ["rideId","username"] , "column_values" : [rideId, username], "where": where_clause, "delete_flag" : "0"})
-		response = make_request('http://18.215.52.220/write', data, headers, "POST")
-		#print(response)
+		response = make_request('http://52.87.27.206/write', data, headers, "POST")
 		if str(response) == "<Response [400]>":
 			return Response(json.dumps({"result": "Duplicate Entry"}), 400)
 		return Response(json.dumps({"result": "Insertion successful"}), 200)
@@ -196,7 +182,6 @@ def join_ride(rideId):
 
 
 @app.route('/api/v1/rides',methods=["GET"])
-#postman : 127.0.0.1:5000/api/v1/rides?source=1&destination=2
 def get_rides():
 	global unique_count
 	unique_count += 1
@@ -208,14 +193,12 @@ def get_rides():
 		return Response(json.dumps({"result": "Input not in correct format"}), 400)
 
 	cur = str(datetime.now())
-	#new_cur = time.strftime("%Y-%m-%d %H:%M:%S", cur)
 	where_clause = "source = " + "'" + source + "'" + " AND " + "destination = " + "'" + destination + "'" + " AND " + "timestamp >= " + "'" + cur +"'"
 	data = json.dumps({"table_name": "rides", "column_names": ["rideId", "created_by", "timestamp"], "where": where_clause})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/read', data, headers, "POST")
+	response = make_request('http://52.87.27.206/read', data, headers, "POST")
 	src = int(source)
 	des = int(destination)
-	#print(int(source))
 	if src>198 or src<1 or des>198 or des<1:
 		return Response(json.dumps({"result": "Invalid source or destination"}), 400)
 	elif response.json() == []:
@@ -227,7 +210,6 @@ def get_rides():
 			dt = i["timestamp"]
 			dt = time.strptime(dt, "%Y-%m-%d %H:%M:%S")
 			result[c]["timestamp"] = time.strftime("%d-%m-%Y:%S-%M-%H", dt)
-			#print(time.strftime("%d-%m-%Y:%S-%M-%H", dt))
 			c = c+1
 
 
@@ -238,7 +220,6 @@ def get_rides():
 
 
 @app.route('/api/v1/rides/<rideId>',methods=["GET"])
-#postman : 127.0.0.1:5000/api/v1/rides
 def get_details(rideId):
 	global unique_count
 	unique_count += 1
@@ -246,17 +227,13 @@ def get_details(rideId):
 	data = json.dumps({"table_name": "rides", "column_names": ["rideId", "created_by", "timestamp", "source", "destination"], "where": where_clause})
 	data1 = json.dumps({"table_name": "ride_users", "column_names": ["username"], "where": where_clause})
 	headers = {'Content-Type': 'application/json'}
-	response = make_request('http://18.215.52.220/read', data, headers, "POST")
-	#print(response.text)
-	response1 = make_request('http://18.215.52.220/read', data1, headers, "POST")
-	#print(response1)
+	response = make_request('http://52.87.27.206/read', data, headers, "POST")
+	response1 = make_request('http://52.87.27.206/read', data1, headers, "POST")
 	fake = []
 	col = []
 	if response.json() == []:
 		return Response(json.dumps({"result": "Ride ID does not exist"}), 204)
 	else:
-		#print(response.text)
-
 		c = 0
 		result = response.json()
 		for i in result:
@@ -274,79 +251,6 @@ def get_details(rideId):
 
 		return jsonify(result)
 
-
-'''
-@app.route('/api/v1/db/write',methods=["POST"])
-def write_to_db():
-
-
-	try:
-		table_name = request.get_json()["table_name"]
-		column_names = request.get_json()["column_names"]
-		column_values = request.get_json()["column_values"]
-		delete_flag = request.get_json()["delete_flag"]
-		where_clause = request.get_json()["where"]
-	except:
-		table_name = request.get_json()["table_name"]
-		column_names = request.get_json()["column_names"]
-		column_values = request.get_json()["column_values"]
-		delete_flag = 0
-
-
-	comma_sep_column_names = ",".join(column_names)
-	comma_sep_column_values = ",".join("'{0}'".format(x) for x in column_values)
-	#print(comma_sep_column_names)
-	#print(comma_sep_column_values)
-
-	if delete_flag == '1':
-		statement = text("DELETE" +  " FROM " + table_name + " WHERE " + where_clause + ";")
-		#print(statement)
-		try:
-			result = db.engine.execute(statement.execution_options(autocommit=True))
-			#print(result.rowcount)
-			#return str(result.rowcount)
-
-			if result.rowcount == 0:
-				return Response(json.dumps({"result": "Ride does not exist"}), 400)
-			else:
-
-				return Response(json.dumps({"result": "Deletion successful"}), 200)
-
-		except IntegrityError:
-			return "NOT OK"
-
-	else:
-		statement = text("INSERT INTO " + table_name + " (" + comma_sep_column_names + ") " + "VALUES (" + comma_sep_column_values + ");")
-		#print(statement)
-		try:
-			db.engine.execute(statement.execution_options(autocommit = True))
-			#print(result.rowcount)
-			return Response(json.dumps({"result": "Insertion successful"}), 201)
-		except IntegrityError:
-			return Response(json.dumps({"result": "Duplicate entry"}), 400)
-
-
-
-@app.route('/api/v1/db/read',methods=["POST"])
-def read_from_db():
-	table_name = request.get_json()["table_name"]
-	column_names = request.get_json()["column_names"]
-	where_clause = request.get_json()["where"]
-	#delete_flag = request.get_json()["delete_flag"]
-	
-	comma_sep_column_names = ",".join(column_names)
-
-
-	statement = text("SELECT " + comma_sep_column_names + " FROM " + table_name + " WHERE " + where_clause + ";")
-	#print(statement)
-	result = db.engine.execute(statement.execution_options(autocommit = True))
-	result = result.fetchall()
-	res = []
-	for i in result:
-		res.append(dict(i))
-	#print(res)
-	return jsonify(res)
-'''
 
 if __name__ == '__main__':
 	
