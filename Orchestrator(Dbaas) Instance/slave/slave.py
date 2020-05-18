@@ -19,30 +19,6 @@ import logging
 
 logging.basicConfig()
 
-zk = KazooClient(hosts='zoo:2181')
-
-def zk_listener(state):
-	if(state == KazooState.LOST):
-		logging.warning("Zookeeper connection lost")
-	elif(state == KazooState.SUSPENDED):
-		logging.warning("Zookeeper connection suspended")
-	else:
-		logging.info("Zookeeper connected")
-
-zk.add_listener(zk_listener)
-zk.start()
-
-zk.ensure_path("/Workers/")
-
-cid = socket.gethostname()
-print(cid)
-path = "/Workers/"+cid
-
-if zk.exists(path):
-    print("Node already exists")
-else:
-    zk.create(path, b"slave node")
-
 dest = shutil.copyfile('/code/sdb/mydatabase.db', '/code/mydatabase.db')
 app=Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -85,7 +61,7 @@ def responseQueueFill(body,ch,properties,method):
 	ch.basic_publish(exchange="", routing_key='responseQ',properties=pika.BasicProperties(correlation_id = properties.correlation_id),body=json_body)
 
 
-def callback1(ch, method, properties, body):
+def callback(ch, method, properties, body):
 	print("callback1 function working")
 	
 	statement = str(body)
@@ -108,35 +84,8 @@ def callback1(ch, method, properties, body):
 	
 	print(" [x] Received CallBack1 %r \n" % body)
 
-def callback2(ch, method, properties, body):
 
-	statement = str(body).strip("b")
-	statement = statement.strip("\'")
-	statement = statement.strip("\"")
-	if "DELETE" in statement:
-		statement = text(statement)
-		result = db.engine.execute(statement.execution_options(autocommit=True))
-		if result.rowcount == 0:
-			res = {"code": 400, "msg": "Bad request"}
-			responseQueueFill(res,ch,properties)
-		else:
-			res = {"code":200, "msg": "Deletion Successful"}
-			responseQueueFill(res,ch,properties)
-
-	else:
-		statement = text(statement)
-		
-		try:
-			result = db.engine.execute(statement.execution_options(autocommit=True))
-			res = {"code": 200, "msg": "Insertion Successful"}
-			responseQueueFill(res,ch,properties)
-		except IntegrityError:
-			res = {"code": 400, "msg": "Duplicate entry"}
-			responseQueueFill(res,ch,properties)
-	
-	print(" [x] Received %r \n" % body)
-
-channel.basic_consume(on_message_callback = callback1, queue = 'readQ') #,  no_ack=True
+channel.basic_consume(on_message_callback = callback, queue = 'readQ') #,  no_ack=True
 print(' [*] Waiting for -----READ---- messages. To exit press CTRL+C')
 channel.start_consuming()
 

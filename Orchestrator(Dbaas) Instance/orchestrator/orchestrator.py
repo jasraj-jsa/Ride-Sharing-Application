@@ -21,29 +21,6 @@ from kazoo.client import KazooState
 
 logging.basicConfig()
 
-zk = KazooClient(hosts='zoo:2181')
-
-def zk_listener(state):
-	if(state == KazooState.LOST):
-		logging.warning("Zookeeper connection lost")
-	elif(state == KazooState.SUSPENDED):
-		logging.warning("Zookeeper connection suspended")
-	else:
-		logging.info("Zookeeper connected")
-
-zk.add_listener(zk_listener)
-zk.start()
-
-if(zk.exists("/Workers")):
-	zk.delete("/Workers", recursive=True)
-
-@zk.ChildrenWatch("/Workers/",send_event = True)
-def watch_children(children,event):
-	print("Children are now: %s" % children)
-	if(event == None):
-		pass
-	elif(event.type is DELETED):
-		print("Slave deleted")
 
 timer_start_flag = False
 timer_started_flag = False
@@ -132,7 +109,7 @@ def scale_timer():
 	
 		
 	read_request_count = 0
-	timer = threading.Timer(30, scale_timer)
+	timer = threading.Timer(120, scale_timer)
 	timer.start()
 
 
@@ -160,9 +137,9 @@ class RPCClient(object):
 		if self.corr_id == props.correlation_id:
 			self.response = body
 				
-	def call(self):
+	def call(self):					# Publishing to READQ
 		self.response = None
-		self.corr_id = str(uuid.uuid4())
+		self.corr_id = str(uuid.uuid4())		#Creating a unique correlation id for each request
 		self.channel.basic_publish(exchange="", routing_key=self.rpcServer, properties = pika.BasicProperties(reply_to = 'responseQ',correlation_id = self.corr_id),body = self.data)
 		
 		while self.response is None:
@@ -173,10 +150,6 @@ class RPCClient(object):
 		return self.response
 
 app=Flask(__name__)
-
-@app.route('/')
-def hello():
-	return 'Hello World! I have been seen'
 
 @app.route("/read" , methods=['POST'])
 def readFromDB():
@@ -241,7 +214,8 @@ def writeToDB():
 		return Response(json.dumps({"result": "Successful"}), 200)
 	elif(code == 204):
 		return Response(json.dumps({"result": "No data"}), 204)
-	
+
+#FAULT TOLERANCE
 @app.route("/api/v1/crash/slave" , methods=['POST'])
 def crashSlave():
 	global containers_running_index
@@ -289,6 +263,7 @@ def workersList():
 			if(i in containers_running.keys()):
 				res.append(int(x_client.inspect_container(containers_running[i].name)['State']['Pid']))
 		res.sort()
+		#Displaying pid of running containers in sorted order
 		return jsonify(res)
 
 if __name__ == '__main__':

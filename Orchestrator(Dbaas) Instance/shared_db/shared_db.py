@@ -10,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import *
 from datetime import datetime
 import time
-import pika
+import pika	#Import rabbitmq
 #import os
 
 credentials = pika.PlainCredentials('guest', 'guest')
@@ -61,35 +61,8 @@ class ride_users(db.Model):
 db.create_all()
 
 
-def responseQueueFill(body,ch,properties,method):
-	json_body = json.dumps(body)
-	ch.basic_ack(delivery_tag=method.delivery_tag)
-	ch.basic_publish(exchange="", routing_key='responseQ',properties=pika.BasicProperties(correlation_id = properties.correlation_id),body=json_body)
 
-def syncQfill(ch,properties,body):
-	ch.basic_publish(exchange="", routing_key='syncQ',body = body)
-	
-
-def callback1(ch, method, properties, body):
-	print("callback1 function working")
-	
-	statement = str(body)
-	statement = statement.strip("b")
-	statement = statement.strip("\'")
-	statement = statement.strip("\"")
-	statement = text(statement)
-	result = db.engine.execute(statement.execution_options(autocommit = True))
-	result = result.fetchall()
-	res = []
-	for i in result:
-		res.append(dict(i))
-
-	responseQueueFill(res,ch,properties)
-
-	print(" [x] Received CallBack1 %r \n" % body)
-
-
-def callback2(ch, method, properties, body):
+def callback(ch, method, properties, body):
 
 	statement = str(body).strip("b")
 	statement = statement.strip("\'")
@@ -97,12 +70,6 @@ def callback2(ch, method, properties, body):
 	if "DELETE" in statement:
 		statement = text(statement)
 		result = db.engine.execute(statement.execution_options(autocommit=True))
-		'''if result.rowcount == 0:
-			res = {"code": 400, "msg": "Bad request"}
-			responseQueueFill(res,ch,properties,method)
-		else:
-			res = {"code":200, "msg": "Deletion Successful"}
-			responseQueueFill(res,ch,properties,method)'''
 
 	else:
 		statement = text(statement)
@@ -110,16 +77,14 @@ def callback2(ch, method, properties, body):
 		try:
 			result = db.engine.execute(statement.execution_options(autocommit=True))
 			res = {"code": 200, "msg": "Insertion Successful"}
-			#responseQueueFill(res,ch,properties,method)
 
 		except IntegrityError:
 			res = {"code": 400, "msg": "Duplicate entry"}
-			#responseQueueFill(res,ch,properties,method)
 	
 	print(" [x] Received %r \n" % body)
 
 
-channel.basic_consume(on_message_callback = callback2, queue = 'syncQ',auto_ack = True)
+channel.basic_consume(on_message_callback = callback, queue = 'syncQ',auto_ack = True)
 print(' [*] Waiting for -----WRITE---- messages. To exit press CTRL+C')
 channel.start_consuming()
 
