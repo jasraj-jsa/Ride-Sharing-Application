@@ -6,10 +6,10 @@
 
 ## TEAM MEMBERS (in inc order of srn)
 
-    JASRAJ ANAND
     RITWIK SINHA
-    KESHAV AGRAWAL
     AKASH MUKHOPADHYAY
+    JASRAJ ANAND
+    KESHAV AGRAWAL
 
 #### Note : For all the files docker-compose is same, keep only the necessary services!
 
